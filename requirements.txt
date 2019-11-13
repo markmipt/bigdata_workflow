@@ -1,0 +1,9 @@
+numpy
+scipy
+scavager
+identipy
+pyteomics>=3.5
+lxml
+catboost
+scikit-learn
+matplotlib
