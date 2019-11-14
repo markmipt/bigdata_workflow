@@ -24,8 +24,6 @@ setup(
                         'Programming Language :: Python :: 3',
                         'Topic :: Scientific/Engineering :: Bio-Informatics'],
     license          = 'License :: OSI Approved :: Apache Software License',
-    entry_points     = {'console_scripts': ['bigdata_workflow_convert = bigdata_workflow.convert:run',
-                                            # 'scav2diffacto = scavager.scav2diffacto:run',
-                                            # 'scav2nsaf = scavager.scav2nsaf:run'
+    entry_points     = {'console_scripts': ['bdrunner = bigdata_workflow.bdrunner:run',
                                             ]}
     )

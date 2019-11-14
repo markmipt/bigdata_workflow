@@ -1,9 +1,7 @@
 numpy
 scipy
 scavager
-identipy
 pyteomics>=3.5
+pyteomics.cythonize
 lxml
-catboost
-scikit-learn
 matplotlib
