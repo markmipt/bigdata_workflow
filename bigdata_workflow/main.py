@@ -3,6 +3,7 @@ import re
 import os
 import subprocess
 import shutil
+import pandas as pd
 from . import utils
 logger = logging.getLogger(__name__)
 
@@ -100,3 +101,36 @@ def process_folder(args):
                 df_variants = utils.get_filtered_variants(table_variant, brute_counter_percent)
 
                 df_variants.to_csv(path_or_buf = table_output_variant, sep='\t', index=False)
+
+    if 6 in modes:
+        # Prepare output variant table for whole folder
+        flag = 1
+        folder_name = os.path.basename(os.path.normpath(infolder))
+        table_final = os.path.join(infolder, folder_name + '_variants.tsv')
+        for infilename in os.listdir(infolder):
+            infile = os.path.join(infolder, infilename)
+            if infile.lower().endswith('.raw'):
+                fn = os.path.splitext(infile)[0]
+                table_output_variant = os.path.splitext(infile)[0] + '_identipy_variant_final.tsv'
+                df1 = pd.read_csv(table_output_variant, sep='\t')
+                df1['foldername'] = folder_name
+                df1['filename'] = os.path.basename(fn)
+                if flag:
+                    dfc = df1.copy()
+                    flag = 0
+                else:
+                    dfc = dfc.append(df1)
+                    dfc.reset_index(inplace=True, drop=True)
+
+        if not flag:
+            cols = dfc.columns.tolist()
+            cols.remove('foldername')
+            cols.insert(1, 'foldername')
+            cols.remove('filename')
+            cols.insert(2, 'filename')
+            cols.remove('gene')
+            cols.insert(3, 'gene')
+            cols.remove('aach')
+            cols.insert(4, 'aach')
+            dfc = dfc[cols]
+            dfc.to_csv(path_or_buf = table_final, sep='\t', index=False)
