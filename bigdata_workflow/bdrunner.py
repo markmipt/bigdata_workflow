@@ -5,6 +5,11 @@ import pkg_resources
 from . import main
 import os
 
+def check_input_dir(dir_path):
+    if not os.path.isdir(dir_path):
+        raise argparse.ArgumentTypeError("readable_dir:{0} is not a valid path".format(dir_path))
+    if not os.access(dir_path, os.R_OK):
+        raise argparse.ArgumentTypeError("readable_dir:{0} is not a readable dir".format(dir_path))
 
 def run():
     parser = argparse.ArgumentParser(
