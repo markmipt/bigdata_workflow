@@ -8,30 +8,40 @@ from . import utils
 logger = logging.getLogger(__name__)
 
 def process_folder(args):
+    logger.info('Starting data analysis...')
     infolder = os.path.abspath(args['indir'])
     modes = utils.parse_mode(args['mode'])
     fmods_val = args['fixed_mods']
     path_to_output_wild_reversed_fasta = args['wdatabase']
     path_to_outout_wild_and_target_peptides_fasta = args['cdatabase']
     if 1 in modes:
-        for infilename in os.listdir(infolder):
-            infile = os.path.join(infolder, infilename)
-            if infile.lower().endswith('.raw'):
-                infile_mzml = os.path.splitext(infile)[0] + '.mzML'
-                if args['overwrite'] or not utils.file_exist_and_nonempty(infile_mzml):
-                    subprocess.run(["msconvert.exe",
-                    infile,
-                    '--singleThreaded',
-                    '--mzML',
-                    '--filter',
-                    '"peakPicking true 1-"',
-                    '--filter',
-                    '"MS2Deisotope"',
-                    '--filter',
-                    '"zeroSamples removeExtra"',
-                    '-o',
-                    infolder             
-                    ])
+        total_cnt = 0
+        for root, _, files in os.walk(infolder):
+            for infilename in files:
+                infile = os.path.join(root, infilename)
+                if infile.lower().endswith('.raw'):
+                    total_cnt += 1
+        logger.info('%s raw files are found, starting convertion...', total_cnt)
+        for root, _, files in os.walk(infolder):
+            for infilename in files:
+                infile = os.path.join(root, infilename)
+                if infile.lower().endswith('.raw'):
+                    infile_mzml = os.path.splitext(infile)[0] + '.mzML'
+                    if args['overwrite'] or not utils.file_exist_and_nonempty(infile_mzml):
+                        subprocess.run(["msconvert.exe",
+                        infile,
+                        '--singleThreaded',
+                        '--mzML',
+                        '--filter',
+                        '"peakPicking true 1-"',
+                        '--filter',
+                        '"MS2Deisotope"',
+                        '--filter',
+                        '"zeroSamples removeExtra"',
+                        '-o',
+                        infolder             
+                        ])
+                    logger.info('%d%d')
 
     if 2 in modes:
         # Wild search
@@ -123,14 +133,5 @@ def process_folder(args):
                     dfc.reset_index(inplace=True, drop=True)
 
         if not flag:
-            cols = dfc.columns.tolist()
-            cols.remove('foldername')
-            cols.insert(1, 'foldername')
-            cols.remove('filename')
-            cols.insert(2, 'filename')
-            cols.remove('gene')
-            cols.insert(3, 'gene')
-            cols.remove('aach')
-            cols.insert(4, 'aach')
-            dfc = dfc[cols]
+            dfc = utils.get_final_table(dfc)
             dfc.to_csv(path_or_buf = table_final, sep='\t', index=False)

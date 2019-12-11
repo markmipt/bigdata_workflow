@@ -48,11 +48,12 @@ def get_filtered_variants(table_variant, brute_counter_percent):
     df2_v['MS1Intensity'] = df2_v['MS1Intensity'].astype(int)
     df2_v['seq_IL'] = df2_v['peptide'].apply(lambda z: z.replace('L', 'I'))
     df2_v['AAchange'] = df2_v['protein'].apply(lambda z: z[0].split(':')[2].split(',', 3)[-1].split(';')[0])
+    df2_v['database'] = df2_v['protein'].apply(lambda z: z[0].split(':')[0].split('_')[-1])
     df2_v['aach'] = df2_v['AAchange'].apply(lambda z: z.split(',')[0])
     df2_v['brute_count'] = df2_v['aach'].apply(lambda z: brute_counter_percent.get(z, 0))
     df2_v['mc'] = df2_v['peptide'].apply(lambda z: parser.num_sites(z, parser.expasy_rules['trypsin']))
     df2_v = df2_v[df2_v['mc'] == 0] ### May be not to filter to 0 missed cleavages ???
-    df2_v = df2_v[df2_v['brute_count'] <= 1.0] ### Another rule instead ???
+    df2_v = df2_v[df2_v['brute_count'] <= 5.0] ### Another rule instead ???
     df2_v = df2_v[df2_v['AAchange'].apply(lambda z: 'L>I' not in z and 'I>L' not in z)]
     df2_v_f = aux.filter(df2_v, key='PEP', is_decoy='decoy2', fdr=0.05)
     df2_v_f['gene'] = df2_v_f['protein'].apply(lambda z: z[0].split(':')[1].split(',')[0])
@@ -146,3 +147,31 @@ def run_scavager(pepxml_wild, path_to_fasta=False):
         array_for_subprocess.extend(['-db', path_to_fasta])
     subprocess.run(array_for_subprocess)
     return 
+
+def get_final_table(dfc):
+    columns = [
+        'peptide',
+        'foldername',
+        'filename',
+        'database',
+        'gene',
+        'aach',
+        'brute_count',
+        'length',
+        'PEP',
+        'massdiff_ppm',
+        'modifications',
+        'MS1Intensity',
+        'RT exp',
+        'RT pred',
+        'assumed_charge',
+        'num_missed_cleavages',
+        'ISOWIDTHDIFF',
+        'protein',
+        'protein_descr',
+        'calc_neutral_pep_mass',
+        'num_tol_term',
+        'q',
+        'ML score',
+    ]
+    return dfc[columns]
