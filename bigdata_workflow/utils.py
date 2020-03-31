@@ -82,25 +82,29 @@ def smart_reverse(ts):
 
 def make_top100_fasta(pepxml_wild, path_to_fasta):
     proteins_wild = pepxml_wild.split('.pep.xml')[0] + '_protein_groups.tsv'
-    path_to_top100_wild_fasta = pepxml_wild.split('.pep.xml')[0] +\
-        '_top100wild_reversed.fasta'
-    df0 = pd.read_csv(proteins_wild, sep='\t')
-    cnt_prots = Counter()
-    for z in df0[['dbname']].values:
-        cnt_prots[z[0].split()[0]] += 1
+    if file_exist_and_nonempty(proteins_wild):
+        path_to_top100_wild_fasta = pepxml_wild.split('.pep.xml')[0] +\
+            '_top100wild_reversed.fasta'
+        df0 = pd.read_csv(proteins_wild, sep='\t')
+        cnt_prots = Counter()
+        for z in df0[['dbname']].values:
+            cnt_prots[z[0].split()[0]] += 1
 
-    top_wild_prots = []
-    abund_prots = set([z[0] for z in cnt_prots.most_common()[:100]])
-    for p in fasta.read(path_to_fasta):
-        if p[0].split()[0] in abund_prots:
-            rev_seq = smart_reverse(p[1])
-            top_wild_prots.append(p)
-            top_wild_prots.append(('DECOY_' + p[0], rev_seq))
+        top_wild_prots = []
+        abund_prots = set([z[0] for z in cnt_prots.most_common()[:100]])
+        for p in fasta.read(path_to_fasta):
+            if p[0].split()[0] in abund_prots:
+                rev_seq = smart_reverse(p[1])
+                top_wild_prots.append(p)
+                top_wild_prots.append(('DECOY_' + p[0], rev_seq))
 
-    fasta.write(
-        top_wild_prots,
-        output=open(path_to_top100_wild_fasta, 'w')).close()
-    return path_to_top100_wild_fasta
+        fasta.write(
+            top_wild_prots,
+            output=open(path_to_top100_wild_fasta, 'w')).close()
+        return path_to_top100_wild_fasta
+    else:
+        print('Missing wild results file!')
+        return False
 
 
 def parse_mode(mode_str):
@@ -119,24 +123,24 @@ def file_exist_and_nonempty(infile):
     return os.path.isfile(infile) and os.stat(infile).st_size
 
 
-def run_identipy(infile, path_to_fasta, enz, fmods_val, mc,
+def run_identipy(infile, path_to_cfg, path_to_fasta, enz, mc,
                  dino=False, snp=False):
     array_for_subprocess = [
-        "identipy",
+        "/home/mark/virtualenv_identipy/bin/identipy",
         infile,
         '-db',
         path_to_fasta,
         '-at',
-        '-ptol',
-        '1',
-        '-ftol',
-        '0.05',
+        # '-ptol',
+        # '10',
+        # '-ftol',
+        # '0.05',
         '-e',
         enz,
         '-mc',
         str(mc),
-        '-fmods',
-        fmods_val,
+        # '-fmods',
+        # fmods_val,
         '-dyn',
         '100',
         '-maxp',
@@ -151,6 +155,8 @@ def run_identipy(infile, path_to_fasta, enz, fmods_val, mc,
         '6',
         '-deis',
         'no',
+        '-cfg',
+        path_to_cfg,
     ]
     if dino:
         array_for_subprocess.extend([
@@ -202,3 +208,14 @@ def get_final_table(dfc):
         'ML score',
     ]
     return dfc[columns]
+
+def remap_gene(x, cos_map):
+    if x.endswith(';prot'):
+        if x.startswith('COSM'):
+            return cos_map[x.split('+rs')[0]]
+        else:
+            return cos_map[x.split('+')[0]]
+    elif '+chr' in x:
+        return cos_map[x.split('+')[0]]
+    else:
+        return x

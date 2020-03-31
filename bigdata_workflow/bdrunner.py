@@ -42,11 +42,11 @@ def run():
         '--overwrite',
         help='overwrite existing files',
         action='store_true')
-    parser.add_argument(
-        '-fmods',
-        '--fixed_mods',
-        help='fixed modifications.\
-             in mass1@aminoacid1,mass2@aminoacid2 format')
+    # parser.add_argument(
+    #     '-fmods',
+    #     '--fixed_mods',
+    #     help='fixed modifications.\
+    #          in mass1@aminoacid1,mass2@aminoacid2 format')
     parser.add_argument(
         '-wdb',
         '--wdatabase',
@@ -57,6 +57,21 @@ def run():
         '--cdatabase',
         help='path to combined peptide fasta file',
         required=True)
+    parser.add_argument(
+        '-cfg',
+        '--config',
+        help='path to IdentiPy config file',
+        required=True)
+    parser.add_argument(
+        '-gmp',
+        '--genemap',
+        help='path to strange genes',
+        default='')
+    parser.add_argument(
+        '-corm',
+        '--cormap',
+        help='path to prosit correlation map',
+        default='')
     parser.add_argument(
         '--debug',
         action='store_true',
