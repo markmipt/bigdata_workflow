@@ -48,7 +48,7 @@ def get_filtered_variants(table_variant, brute_counter_percent):
     df2_v['protein'] = df2_v['protein'].apply(lambda x: ast.literal_eval(x))
     df2_v = df2_v[df2_v['protein'].apply(rule_for_mutant)]
     df2_v = df2_v[~df2_v['decoy1']]
-
+    # df2_v = df2_v[df2_v['massdiff_int'] == 0]
     df2_v['len'] = df2_v['peptide'].apply(lambda z: len(z))
     df2_v['MS1Intensity'] = df2_v['MS1Intensity'].astype(int)
     df2_v['seq_IL'] = df2_v['peptide'].apply(lambda z: z.replace('L', 'I'))
@@ -68,11 +68,17 @@ def get_filtered_variants(table_variant, brute_counter_percent):
     df2_v = df2_v[df2_v['brute_count'] <= 5.0]
     df2_v = df2_v[df2_v['AAchange'].apply(
         lambda z: 'L>I' not in z and 'I>L' not in z)]
-    df2_v_f = aux.filter(df2_v, key='PEP', is_decoy='decoy2', fdr=0.05)
-    df2_v_f['gene'] = df2_v_f['protein'].apply(
+    # df2_v_f = aux.filter(df2_v, key='PEP', is_decoy='decoy2', fdr=0.05)
+    # df2_v_f['gene'] = df2_v_f['protein'].apply(
+    #     lambda z: z[0].split(':')[1].split(',')[0])
+    # return df2_v_f
+    df2_v['gene'] = df2_v['protein'].apply(
         lambda z: z[0].split(':')[1].split(',')[0])
-    return df2_v_f
+    return df2_v
 
+def get_filtered_variants_fdr_only(df2_v, fdr):
+    df2_v = aux.filter(df2_v, key='PEP', is_decoy='decoy2', fdr=fdr)
+    return df2_v
 
 # Reversing of variant peptides
 def smart_reverse(ts):
@@ -142,9 +148,9 @@ def run_identipy(infile, path_to_cfg, path_to_fasta, enz, mc,
         # '-fmods',
         # fmods_val,
         '-dyn',
-        '100',
+        '1000',
         '-maxp',
-        '50',
+        '100',
         '-cmin',
         '1',
         '-cmax',
@@ -161,7 +167,7 @@ def run_identipy(infile, path_to_cfg, path_to_fasta, enz, mc,
     if dino:
         array_for_subprocess.extend([
             '-dino',
-            '/home/lab006/Dinosaur/Dinosaur-1.1.3.free.jar'])
+            '/usr/bin/dinosaur'])
     if snp:
         array_for_subprocess.extend(['-snp', '1'])
     subprocess.run(array_for_subprocess)

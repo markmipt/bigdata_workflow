@@ -172,6 +172,7 @@ def process_folder(args):
         # Prepare output variant table for whole folder
         flag = 1
         folder_name = os.path.basename(os.path.normpath(infolder))
+        print(folder_name)
         table_final = os.path.join(infolder, folder_name + '_variants.tsv')
         for infilename in os.listdir(infolder):
             infile = os.path.join(infolder, infilename)
@@ -192,7 +193,10 @@ def process_folder(args):
                 except:
                     print('Missing tsv files')
 
+        # print('HERE', flag)
         if not flag:
+            dfc = utils.get_filtered_variants_fdr_only(dfc, 0.05)
+            # print(dfc)
             dfc = utils.get_final_table(dfc)
             dfc.to_csv(path_or_buf=table_final, sep='\t', index=False)
 
@@ -233,6 +237,10 @@ def process_folder(args):
         dfo['PSM count'] = dfo.groupby(['peptide', 'filename'])['peptide'].transform('count')
         dfo['total_intensity_max'] = dfo.groupby('peptide')['MS1Intensity'].transform('max')
         df1 = dfo.reset_index(level=0).rename(columns={'level_0': 'group'})
+        # # df1 = 
+        # print(df1[pd.isna(df1['gene'])])
+        df1.loc[pd.isna(df1['gene']), 'gene'] = 'NAgene'
+        print(df1[pd.isna(df1['gene'])])
         if cos_map:
             df1['gene'] = df1['gene'].apply(utils.remap_gene, cos_map=cos_map)
         df = df1.groupby(['group', 'peptide']).agg({'aach': 'first', 'gene': 'first', 'database': 'first',
