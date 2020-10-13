@@ -211,6 +211,7 @@ def get_final_table(dfc):
         'peptide',
         'foldername',
         'filename',
+        'spectrum',
         'database',
         'gene',
         'aach',
