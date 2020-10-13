@@ -11,7 +11,7 @@ class PrositServer:
         stream = os.popen(
             "make server MODEL_SPECTRA=/home/zloydanny/test_data/prosit/model_spectra/ "
             "MODEL_IRT=/home/zloydanny/test_data/prosit/model_irt_prediction HOSTPORT=3000")
-        time.sleep(5)
+        time.sleep(20)
         os.chdir(orig_wd)
 
     @staticmethod
