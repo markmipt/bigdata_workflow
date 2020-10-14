@@ -20,6 +20,23 @@ def get_aachange(zz):
     return aachange
 
 
+def get_aachange_for_variants(zz):
+    z = zz['protein']
+    if zz['database'] == 'rnaedit':
+        return z[0].split(';')[1].split(',')[-2]
+    else:
+        return z[0].split(':')[2].split(',', 3)[-1].split(';')[0]
+    
+def check_unreliable_changes(x):
+    if x == 'N>D':
+        return 'unreliable'
+    else:
+        tmp = x.split('>')[-1]
+        if 'R' in tmp or 'K' in tmp:
+            return 'unreliable'
+    return ''
+
+
 def get_brute_counts(table_bruteforce):
     df3 = pd.read_csv(table_bruteforce, sep='\t')
 
@@ -52,12 +69,14 @@ def get_filtered_variants(table_variant, brute_counter_percent):
     df2_v['len'] = df2_v['peptide'].apply(lambda z: len(z))
     df2_v['MS1Intensity'] = df2_v['MS1Intensity'].astype(int)
     df2_v['seq_IL'] = df2_v['peptide'].apply(lambda z: z.replace('L', 'I'))
-    df2_v['AAchange'] = df2_v['protein'].apply(
-        lambda z: z[0].split(':')[2].split(',', 3)[-1].split(';')[0])
+
+
     df2_v['database'] = df2_v['protein'].apply(
         lambda z: z[0].split(':')[0].split('_')[-1])
+    df2_v['AAchange'] = df2_v.apply(get_aachange_for_variants, axis=1)
     df2_v['aach'] = df2_v['AAchange'].apply(
         lambda z: z.split(',')[0])
+    df2_v['comment'] = df2_v['aach'].apply(check_unreliable_changes)
     df2_v['brute_count'] = df2_v['aach'].apply(
         lambda z: brute_counter_percent.get(z, 0))
     df2_v['mc'] = df2_v['peptide'].apply(
@@ -192,6 +211,7 @@ def get_final_table(dfc):
         'peptide',
         'foldername',
         'filename',
+        'spectrum',
         'database',
         'gene',
         'aach',
@@ -212,6 +232,7 @@ def get_final_table(dfc):
         'num_tol_term',
         'q',
         'ML score',
+        'comment',
     ]
     return dfc[columns]
 

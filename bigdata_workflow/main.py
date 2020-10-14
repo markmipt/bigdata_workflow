@@ -230,7 +230,7 @@ def process_folder(args):
         df1 = pd.read_table(table_final)
         df1['group'] = 'common_group'#df1['filename'].apply(lambda x: x.split('_')[0].lower())
         dfo = df1.copy()
-        dfo = dfo[['peptide', 'filename', 'database', 'gene', 'aach', 'group', 'MS1Intensity', 'brute_count', 'length', 'PEP']]
+        dfo = dfo[['peptide', 'filename', 'database', 'gene', 'aach', 'group', 'MS1Intensity', 'brute_count', 'length', 'PEP', 'comment']]
         dfo['MS1Intensity'] = np.log10(dfo['MS1Intensity'])
         dfo['total_psms'] = dfo.groupby('peptide')['peptide'].transform('count')
         # dfo['total_files'] = dfo.groupby(('peptide', 'filename'))['peptide'].transform('count')
@@ -249,10 +249,11 @@ def process_folder(args):
                                             'MS1Intensity': 'max',
                                             'brute_count': 'max',
                                             'length': 'first',
-                                            'PEP': 'min'})
+                                            'PEP': 'min',
+                                            'comment': 'min'})
         df = df.rename(columns={"filename": "filecount"})
         dfd = df.reset_index(level=0)
-        cols_to_save = ['aach', 'gene', 'database', 'brute_count', 'length', 'PEP']
+        cols_to_save = ['aach', 'gene', 'database', 'brute_count', 'length', 'PEP', 'comment']
         info = dfd.loc[~dfd.index.duplicated(), cols_to_save]
         udf = df.unstack(level=0)
         gdf = udf.swaplevel(axis=1).sort_index(axis=1).loc[:, (slice(None), ['PSM count', 'MS1Intensity', 'filecount'])].fillna(0)#.astype(int)
@@ -268,15 +269,15 @@ def process_folder(args):
             gdf['correlation'] = 0
         c = list(gdf.columns)
         order = {'peptide': 0, 'PSM count': 1, 'filecount': 2, 'aach': 3, 'database': 4, 'gene': 5, 'correlation': 6,
-                'length': 7, 'brute_count': 8, 'PEP': 9}
+                'length': 7, 'brute_count': 8, 'PEP': 9, 'comment': 10}
         gdf = gdf[sorted(c, key=lambda x: order.get(x[0], 1e5))].copy()
-        gdf = gdf.sort_values(by='filecount', ascending = False)
         gdf = gdf.replace([np.inf, -np.inf], 0)
+        gdf['comment'] = gdf['comment'].fillna('')
+        gdf = gdf.sort_values(by=['comment', 'filecount'], ascending = [True, False])
         cols_to_int = {}
         for coln in gdf.columns:
             if 'PSM count' in coln or 'filecount' in coln:
                 cols_to_int[coln] = 'int32'
-        cols_to_int
         gdf = gdf.astype(cols_to_int)
         gdf.to_csv(path_or_buf=table_final_output, sep='\t', index=False, float_format='%.2f')
 
