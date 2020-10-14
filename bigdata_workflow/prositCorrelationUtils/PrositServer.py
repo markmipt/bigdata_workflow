@@ -21,4 +21,5 @@ class PrositServer:
 
     @staticmethod
     def send_file(file):
-        os.system('curl -o tmp.csv -F "peptides=@mega_new.csv" http://127.0.0.1:3000/predict/msms')
+        os.system('curl -o tmpPrositDir/afterProsit.csv -F "peptides=@mega_new.csv" http://127.0.0.1:3000/predict/msms')
+        return 'tmpPrositDir/afterProsit.csv'
