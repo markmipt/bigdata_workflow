@@ -5,6 +5,8 @@ import subprocess
 import shutil
 import pandas as pd
 import numpy as np
+
+from prositCorrelationUtils.PrositPipeline import PrositPipeline
 from . import utils
 logger = logging.getLogger(__name__)
 
@@ -201,6 +203,12 @@ def process_folder(args):
             dfc.to_csv(path_or_buf=table_final, sep='\t', index=False)
 
     if 7 in modes:
+        # FIXME
+        file = 'path/to/file'
+        prosit_pipeline = PrositPipeline()
+        prosit_pipeline.main_prosit(file)
+
+    if 8 in modes:
         
         if path_to_genemap:
             cos_map = dict()

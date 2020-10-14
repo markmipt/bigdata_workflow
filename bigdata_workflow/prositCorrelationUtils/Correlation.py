@@ -38,7 +38,7 @@ class Correlation:
         name_list = []
         i = 0
         test_len = len(test)
-        
+
         for fn, spn, pep_name in test[['filename', 'spectrum', 'modified_sequence']].values:
             print(str(i) + '/' + str(test_len))
             i += 1
