@@ -5,9 +5,7 @@ import os
 class FileProcessor:
 
     @staticmethod
-    def make_prosit_file(file):
-        name = file.split('/')[-1]
-        # FIXME Change file to process
+    def make_prosit_file():
         pre_prosit_file = pd.read_csv('tmpPrositDir/identipyTmpFile.csv')
         print(pre_prosit_file.columns)
         prosit_file = pd.DataFrame(pre_prosit_file['modified_sequence'])
@@ -19,10 +17,7 @@ class FileProcessor:
 
     @staticmethod
     def change_and_save_identipy_copy(file):
-        # FIXME Change file to process
-
-        identipy_file = pd.read_table('/home/results/identipy/PXD005921/PXD005921_variants.tsv')
-
+        identipy_file = pd.read_table(file + '_variants.tsv')
         identipy_file = identipy_file.rename(columns={"peptide": "modified_sequence"})
         identipy_file['length'] = identipy_file['modified_sequence'].str.len()
         identipy_file = identipy_file.loc[identipy_file['length'] <= 30]

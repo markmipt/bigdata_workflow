@@ -26,7 +26,7 @@ class Correlation:
 
         return top / bottom
 
-    def make_correlations(self, old_file, new_file, wild_or_variant):
+    def make_correlations(self, old_file, new_file, name, wild_or_variant):
 
         test = pd.read_csv(old_file)
         ready = pd.read_table(new_file)
@@ -42,7 +42,7 @@ class Correlation:
         for fn, spn, pep_name in test[['filename', 'spectrum', 'modified_sequence']].values:
             print(str(i) + '/' + str(test_len))
             i += 1
-            reader = mgf.read('/home/results/identipy/PXD005921/' + fn + '_identipy.mgf')
+            reader = mgf.read('/home/results/identipy/' + name + '/' + fn + '_identipy.mgf')
             mz_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Masses'])
             int_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Intensities'])
             full_list.append([mz_tmp, int_tmp])
@@ -71,6 +71,6 @@ class Correlation:
         test['correlation'] = corr_list
 
         if wild_or_variant == 'variant':
-            test.to_csv(old_file + '_variants.tsv')
+            test.to_csv(name + '_variants.tsv')
         else:
-            test.to_csv(old_file + '_wilds.tsv')
+            test.to_csv(name + '_wilds.tsv')

@@ -203,8 +203,8 @@ def process_folder(args):
             dfc.to_csv(path_or_buf=table_final, sep='\t', index=False)
 
     if 7 in modes:
-        # FIXME
-        file = 'path/to/file'
+        folder_name = os.path.basename(os.path.normpath(infolder))
+        file = os.path.join(infolder, folder_name)
         prosit_pipeline = PrositPipeline()
         prosit_pipeline.main_prosit(file)
 

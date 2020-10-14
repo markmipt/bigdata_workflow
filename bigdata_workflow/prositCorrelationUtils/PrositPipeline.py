@@ -8,6 +8,8 @@ class PrositPipeline:
     @staticmethod
     def main_prosit(file):
 
+        name = file.split('/')[-1]
+
         # make template dir
         template_dir = TemplateDir()
         template_dir.create_prosit_template_dir()
@@ -24,10 +26,10 @@ class PrositPipeline:
         prosit_server = PrositServer()
         prosit_server.run_prosit_server()
         after_prosit_variant = prosit_server.send_file(prosit_file_variant)
-        after_prosit_wild = prosit_server.send_file(most_freq_wild_file)
+        after_prosit_wild = prosit_server.send_file(prosit_file_wild)
         prosit_server.stop_prosit_server()
 
         # count correlations and changing file
         correlation = Correlation()
-        correlation.make_correlations(identipy_file, after_prosit_variant, 'variant')
-        correlation.make_correlations(most_freq_wild_file, after_prosit_wild, 'wild')
+        correlation.make_correlations(identipy_file, after_prosit_variant, name, 'variant')
+        correlation.make_correlations(most_freq_wild_file, after_prosit_wild, name, 'wild')
