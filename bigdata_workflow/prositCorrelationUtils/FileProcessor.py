@@ -23,9 +23,10 @@ class FileProcessor:
     def change_and_save_identipy_copy(name, wild):
         if wild:
             wild_or_variant = "Wild"
+            identipy_file = pd.read_table(name)
         else:
             wild_or_variant = "Variant"
-        identipy_file = pd.read_table(name + '_variants.tsv')
+            identipy_file = pd.read_table(name + '_variants.tsv')
         identipy_file = identipy_file.rename(columns={"peptide": "modified_sequence"})
         identipy_file['length'] = identipy_file['modified_sequence'].str.len()
         identipy_file = identipy_file.loc[identipy_file['length'] <= 30]
@@ -36,13 +37,13 @@ class FileProcessor:
     @staticmethod
     def get_most_frequent_file_of_wild(file):
         files = os.listdir(file)
-        wilds = filter(lambda x: x.endswith('_wild_peptides.csv '), files)
         most_len = 0
         best_wild_file = ''
-        for i in wilds:
-            tmp_df = pd.read_csv(i)
-            tmp_len = len(tmp_df)
-            if tmp_len > most_len:
-                most_len = tmp_len
-                best_wild_file = i
+        for i in files:
+            if i.endswith("_wild_peptides.tsv"):
+                tmp_df = pd.read_table(file + "/" + i)
+                tmp_len = len(tmp_df)
+                if tmp_len > most_len:
+                    most_len = tmp_len
+                    best_wild_file = i
         return best_wild_file

@@ -30,7 +30,7 @@ class Correlation:
 
         test = pd.read_csv(old_file)
         ready = pd.read_table(new_file)
-
+        print(ready.columns)
         full_list = []
         second_list = []
         new_list = []
@@ -38,7 +38,7 @@ class Correlation:
         name_list = []
         i = 0
         test_len = len(test)
-
+        print(test.columns)
         for fn, spn, pep_name in test[['filename', 'spectrum', 'modified_sequence']].values:
             print(str(i) + '/' + str(test_len))
             i += 1

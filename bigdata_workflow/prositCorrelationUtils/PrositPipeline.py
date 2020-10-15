@@ -1,7 +1,7 @@
-from prositCorrelationUtils.Correlation import Correlation
-from prositCorrelationUtils.FileProcessor import FileProcessor
-from prositCorrelationUtils.PrositServer import PrositServer
-from prositCorrelationUtils.TemplateDir import TemplateDir
+from .Correlation import Correlation
+from .FileProcessor import FileProcessor
+from .PrositServer import PrositServer
+from .TemplateDir import TemplateDir
 
 
 class PrositPipeline:
@@ -10,26 +10,28 @@ class PrositPipeline:
 
         name = directory.split('/')[-2]
 
-        # make template dir
+        print(name)
         template_dir = TemplateDir()
         template_dir.create_prosit_template_dir()
 
-        # process prepare prosit file
+        print(directory)
         file_processor = FileProcessor()
-        identipy_file = file_processor.change_and_save_identipy_copy(directory + name, False)
+        identipy_file = file_processor.change_and_save_identipy_copy(directory, False)
         prosit_file_variant = file_processor.make_prosit_file(identipy_file, False)
-        most_freq_wild_file = file_processor.get_most_frequent_file_of_wild(directory)
-        most_freq_wild_file = file_processor.change_and_save_identipy_copy(most_freq_wild_file, True)
+        most_freq_wild_file = file_processor.get_most_frequent_file_of_wild(directory[:-len(name)])
+        most_freq_wild_file = file_processor.change_and_save_identipy_copy(directory[:-len(name)] + most_freq_wild_file, True)
         prosit_file_wild = file_processor.make_prosit_file(most_freq_wild_file, True)
 
         # start Prosit server
         prosit_server = PrositServer()
         prosit_server.run_prosit_server()
-        after_prosit_variant = prosit_server.send_file(prosit_file_variant)
-        after_prosit_wild = prosit_server.send_file(prosit_file_wild)
+        after_prosit_variant = prosit_server.send_file(prosit_file_variant, False)
+        after_prosit_wild = prosit_server.send_file(prosit_file_wild, True)
         prosit_server.stop_prosit_server()
 
         # count correlations and changing file
         correlation = Correlation()
         correlation.make_correlations(identipy_file, after_prosit_variant, name, 'variant')
         correlation.make_correlations(most_freq_wild_file, after_prosit_wild, name, 'wild')
+        template_dir.delete_prosit_template_dir()
+
