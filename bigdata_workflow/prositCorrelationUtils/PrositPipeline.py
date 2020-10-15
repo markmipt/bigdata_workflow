@@ -1,7 +1,7 @@
-from prositCorrelationUtils.Correlation import Correlation
-from prositCorrelationUtils.FileProcessor import FileProcessor
-from prositCorrelationUtils.PrositServer import PrositServer
-from prositCorrelationUtils.TemplateDir import TemplateDir
+from .Correlation import Correlation
+from .FileProcessor import FileProcessor
+from .PrositServer import PrositServer
+from .TemplateDir import TemplateDir
 
 
 class PrositPipeline:

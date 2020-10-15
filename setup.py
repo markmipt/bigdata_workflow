@@ -18,7 +18,7 @@ setup(
     author           = 'Mark Ivanov & Lev Levitsky',
     author_email     = 'pyteomics@googlegroups.com',
     url              = 'https://github.com/markmipt/bigdata_workflow',
-    packages         = ['bigdata_workflow', ],
+    packages         = ['bigdata_workflow', 'bigdata_workflow.prositCorrelationUtils'],
     install_requires = [line.strip() for line in open('requirements.txt')],
     classifiers      = ['Intended Audience :: Science/Research',
                         'Programming Language :: Python :: 3',

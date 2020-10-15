@@ -6,7 +6,7 @@ import shutil
 import pandas as pd
 import numpy as np
 
-from prositCorrelationUtils.PrositPipeline import PrositPipeline
+from .prositCorrelationUtils.PrositPipeline import PrositPipeline
 from . import utils
 logger = logging.getLogger(__name__)
 
