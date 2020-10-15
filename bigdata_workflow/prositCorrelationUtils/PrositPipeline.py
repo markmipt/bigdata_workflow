@@ -19,6 +19,7 @@ class PrositPipeline:
         identipy_file = file_processor.change_and_save_identipy_copy(directory, False)
         prosit_file_variant = file_processor.make_prosit_file(identipy_file, False)
         most_freq_wild_file = file_processor.get_most_frequent_file_of_wild(directory[:-len(name)])
+        saved_wild_name = most_freq_wild_file
         most_freq_wild_file = file_processor.change_and_save_identipy_copy(directory[:-len(name)] + most_freq_wild_file, True)
         prosit_file_wild = file_processor.make_prosit_file(most_freq_wild_file, True)
 
@@ -31,7 +32,7 @@ class PrositPipeline:
 
         # count correlations and changing file
         correlation = Correlation()
-        correlation.make_correlations(identipy_file, after_prosit_variant, name, 'variant')
-        correlation.make_correlations(most_freq_wild_file, after_prosit_wild, name, 'wild')
+        correlation.make_correlations(identipy_file, after_prosit_variant, name, 'variant', saved_wild_name)
+        correlation.make_correlations(most_freq_wild_file, after_prosit_wild, name, 'wild', saved_wild_name)
         template_dir.delete_prosit_template_dir()
 
