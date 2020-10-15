@@ -17,7 +17,7 @@ class PrositPipeline:
         # process prepare prosit file
         file_processor = FileProcessor()
         identipy_file = file_processor.change_and_save_identipy_copy(file)
-        prosit_file_variant = file_processor.make_prosit_file(identipy_file)
+        prosit_file_variant = file_processor.make_prosit_file()
         most_freq_wild_file = file_processor.get_most_frequent_file_of_wild(file)
         most_freq_wild_file = file_processor.change_and_save_identipy_copy(most_freq_wild_file)
         prosit_file_wild = file_processor.make_prosit_file(most_freq_wild_file)
