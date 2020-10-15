@@ -2,6 +2,7 @@ import math
 import numpy as np
 import pandas as pd
 from pyteomics import mgf
+from progress.bar import IncrementalBar
 
 
 class Correlation:
@@ -40,8 +41,9 @@ class Correlation:
         test_len = len(test)
         print(test.columns)
         if wild_or_variant == "variant":
+            bar = IncrementalBar('Countdown', max = test_len)
             for fn, spn, pep_name in test[['filename', 'spectrum', 'modified_sequence']].values:
-                print(str(i) + '/' + str(test_len))
+                bar.next()
                 i += 1
                 reader = mgf.read('/home/results/identipy/' + name + '/' + fn + '_identipy.mgf')
                 mz_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Masses'])
@@ -50,9 +52,11 @@ class Correlation:
                 mz_spec = list(reader[spn]['m/z array'])
                 int_spec = list(reader[spn]['intensity array'])
                 second_list.append([mz_spec, int_spec, pep_name])
+            bar.finish()
         else:
+            bar = IncrementalBar('Countdown', max = test_len)
             for spn, pep_name in test[[ 'spectrum', 'modified_sequence']].values:
-                print(str(i) + '/' + str(test_len))
+                bar.next()
                 fn = wild_name[:-len('_identipy_wild_peptides.tsv')]
                 i += 1
                 reader = mgf.read('/home/results/identipy/' + name + '/' + fn + '_identipy.mgf')
@@ -62,7 +66,7 @@ class Correlation:
                 mz_spec = list(reader[spn]['m/z array'])
                 int_spec = list(reader[spn]['intensity array'])
                 second_list.append([mz_spec, int_spec, pep_name])
-
+            bar.finish()
         for idx, i in enumerate(full_list):
             new_mz = []
             new_int = []
