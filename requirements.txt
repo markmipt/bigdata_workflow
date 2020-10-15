@@ -5,3 +5,4 @@ pyteomics>=3.5
 pyteomics.cythonize
 lxml
 matplotlib
+progress
