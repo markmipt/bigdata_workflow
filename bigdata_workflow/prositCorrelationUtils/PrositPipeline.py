@@ -6,7 +6,7 @@ from .TemplateDir import TemplateDir
 
 class PrositPipeline:
     @staticmethod
-    def main_prosit(directory):
+    def main_prosit(directory, prosit_path, MODEL_SPECTRA, MODEL_IRT):
 
         name = directory.split('/')[-2]
 
@@ -25,7 +25,7 @@ class PrositPipeline:
 
         # start Prosit server
         prosit_server = PrositServer()
-        prosit_server.run_prosit_server()
+        prosit_server.run_prosit_server(prosit_path, MODEL_SPECTRA, MODEL_IRT)
         after_prosit_variant = prosit_server.send_file(prosit_file_variant, False)
         after_prosit_wild = prosit_server.send_file(prosit_file_wild, True)
         prosit_server.stop_prosit_server()
