@@ -204,10 +204,10 @@ def process_folder(args):
 
     if 7 in modes:
         folder_name = os.path.basename(os.path.normpath(infolder))
-        #FIXME
-        prosit_path = ""
-        MODEL_SPECTRA = ""
-        MODEL_IRT = ""
+
+        prosit_path = args['prosit']
+        MODEL_SPECTRA = args['prosit_model']
+        MODEL_IRT = args['prosit_irt_model']
         file = os.path.join(infolder, folder_name)
         prosit_pipeline = PrositPipeline()
         prosit_pipeline.main_prosit(file, prosit_path, MODEL_SPECTRA, MODEL_IRT)

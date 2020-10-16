@@ -68,6 +68,18 @@ def run():
         help='path to strange genes',
         default='')
     parser.add_argument(
+        '-prosit',
+        help='path to prosit folder',
+        default='')
+    parser.add_argument(
+        '-prosit_model',
+        help='path to prosit fragmentation model',
+        default='')
+    parser.add_argument(
+        '-prosit_irt_model',
+        help='path to prosit iRT model',
+        default='')
+    parser.add_argument(
         '-corm',
         '--cormap',
         help='path to prosit correlation map',
