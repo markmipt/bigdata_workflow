@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from pyteomics import mgf
 from progress.bar import IncrementalBar
+from multiprocessing import Pool
 
 
 class Correlation:
@@ -26,6 +27,10 @@ class Correlation:
             top += i1 * i2
 
         return top / bottom
+
+    def count_correlations(self, list_a):
+        list_a[0].append(self.cos_correlation(list_a[2][1], np.array(list_a[1][list_a[2][3]][1][0].split(';'), dtype=float)))
+        return list_a[0]
 
     def make_correlations(self, old_file, new_file, name, wild_or_variant, wild_name):
 
@@ -67,6 +72,7 @@ class Correlation:
                 int_spec = list(reader[spn]['intensity array'])
                 second_list.append([mz_spec, int_spec, pep_name])
             bar.finish()
+        tmp = 0
         for idx, i in enumerate(full_list):
             new_mz = []
             new_int = []
@@ -79,11 +85,19 @@ class Correlation:
                 else:
                     new_mz.append(0)
                     new_int.append(0)
-            new_list.append([new_mz, new_int, second_list[idx][2]])
+            new_list.append([new_mz, new_int, second_list[idx][2], tmp])
+            tmp += 1
 
-        for idx, i in enumerate(new_list):
-            corr_list.append(self.cos_correlation(i[1], np.array(full_list[idx][1][0].split(';'), dtype=float)))
-            name_list.append(i[2])
+
+
+        # for idx, i in enumerate(new_list):
+        #     corr_list.append(self.cos_correlation(i[1], np.array(full_list[idx][1][0].split(';'), dtype=float)))
+        #     name_list.append(i[2])
+
+
+        with Pool(5) as p:
+            corr_list = p.map(self.count_correlations(), [corr_list, full_list, new_list])
+
 
         test['correlation'] = corr_list
 
