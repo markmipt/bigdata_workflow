@@ -16,7 +16,7 @@ class PrositPipeline:
 
         print(directory)
         file_processor = FileProcessor()
-        collision_energy = file_processor.get_collision_energy(directory)
+        collision_energy = file_processor.get_collision_energy('/'.join(directory.split('/')[:-1]))
         identipy_file = file_processor.change_and_save_identipy_copy(directory, False)
         prosit_file_variant = file_processor.make_prosit_file(identipy_file, False, collision_energy)
         most_freq_wild_file = file_processor.get_most_frequent_file_of_wild(directory[:-len(name)])

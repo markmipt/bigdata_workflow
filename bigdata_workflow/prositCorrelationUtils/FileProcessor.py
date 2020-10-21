@@ -26,7 +26,7 @@ class FileProcessor:
         else:
             wild_or_variant = "Variant"
         pre_prosit_file = pd.read_csv(name)
-        prosit_file = pd.DataFrame(pre_prosit_file['modified_sequence', 'assumed_charge'])
+        prosit_file = pre_prosit_file[['modified_sequence', 'assumed_charge']]
         prosit_file['collision_energy'] = [collision_energy for i in range(len(pre_prosit_file))]
         prosit_file.columns = ['modified_sequence', 'precursor_charge', 'collision_energy']
         return_name = "tmpPrositDir/" + wild_or_variant + "PrositFile.csv"
