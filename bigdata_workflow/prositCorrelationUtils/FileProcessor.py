@@ -1,19 +1,33 @@
 import pandas as pd
 import os
+from pyteomics import mzml
 
 
 class FileProcessor:
 
     @staticmethod
-    def make_prosit_file(name, wild):
+    def get_collision_energy(path):
+        files = os.listdir(path)
+        for file in files:
+            if file.endswith('.mzML'):
+                file_to_compute = file
+                break
+        m = mzml.read(path + '/' + file_to_compute)
+        tmp_mzml = m.next()
+        while not tmp_mzml['ms level'] == 2:
+            tmp_mzml = m.next()
+        collision_energy = float(tmp_mzml['precursorList']['precursor'][0]['activation']['collision energy'])
+        return collision_energy
+
+    @staticmethod
+    def make_prosit_file(name, wild, collision_energy):
         if wild:
             wild_or_variant = "Wild"
         else:
             wild_or_variant = "Variant"
         pre_prosit_file = pd.read_csv(name)
-        prosit_file = pd.DataFrame(pre_prosit_file['modified_sequence'])
-        prosit_file['precursor_charge'] = [1 for i in range(len(pre_prosit_file))]
-        prosit_file['collision_energy'] = [30 for i in range(len(pre_prosit_file))]
+        prosit_file = pre_prosit_file[['modified_sequence', 'assumed_charge']]
+        prosit_file['collision_energy'] = [collision_energy for i in range(len(pre_prosit_file))]
         prosit_file.columns = ['modified_sequence', 'precursor_charge', 'collision_energy']
         return_name = "tmpPrositDir/" + wild_or_variant + "PrositFile.csv"
         prosit_file.to_csv(return_name, sep=',', index=False)
