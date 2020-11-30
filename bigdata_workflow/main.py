@@ -5,11 +5,32 @@ import subprocess
 import shutil
 import pandas as pd
 import numpy as np
+import tempfile
+from pyteomics import auxiliary as aux
+from scipy.stats import scoreatpercentile
+from scipy.optimize import curve_fit
+from scipy import exp
 
 from .prositCorrelationUtils.PrositPipeline import PrositPipeline
 from . import utils
 logger = logging.getLogger(__name__)
 
+
+
+def noisygaus(x, a, x0, sigma, b):
+    return a * exp(-(x - x0) ** 2 / (2 * sigma ** 2)) + b
+
+def calibrate_RT_gaus(bwidth, mass_left, mass_right, true_md):
+
+    bbins = np.arange(-mass_left, mass_right, bwidth)
+    H1, b1 = np.histogram(true_md, bins=bbins)
+    b1 = b1 + bwidth
+    b1 = b1[:-1]
+
+
+    popt, pcov = curve_fit(noisygaus, b1, H1, p0=[1, np.median(true_md), bwidth * 5, 1])
+    mass_shift, mass_sigma = popt[1], abs(popt[2])
+    return mass_shift, mass_sigma, pcov[0][0]
 
 def process_folder(args):
     logger.info('Starting data analysis...')
@@ -212,6 +233,89 @@ def process_folder(args):
         prosit_pipeline.main_prosit(infolder, folder_name, prosit_path, MODEL_SPECTRA, MODEL_IRT)
 
     if 8 in modes:
+        deeplc_path = args['deeplc']
+        deeplc_path = deeplc_path.strip()
+
+        folder_name = os.path.basename(os.path.normpath(infolder))
+        table_final = os.path.join(infolder, folder_name + '_variants.tsv')
+        table_wilds = os.path.join(infolder, folder_name + '_wilds.tsv')
+        df1 = pd.read_table(table_final)
+        df2 = pd.read_table(table_wilds)
+
+        df1['mods_for_deepLC'] = df1.apply(utils.mods_for_deepLC, axis=1)
+        df2['mods_for_deepLC'] = df2.apply(utils.mods_for_deepLC, axis=1)
+
+        df3 = df1.append(df2, ignore_index=True)
+
+
+        outtrain = tempfile.NamedTemporaryFile(suffix='.txt', mode='w')
+        outcalib = tempfile.NamedTemporaryFile(suffix='.txt', mode='w')
+        outres = tempfile.NamedTemporaryFile(suffix='.txt', mode='w')
+        outres_name = outres.name
+        outres.close()
+        ns = df3['peptide'].values
+        nr = df3['RT exp'].values
+        nm = df3['mods_for_deepLC'].values
+        print(df3['mods_for_deepLC'])
+        print('Peptides used for RT prediction: %d' % (len(ns), ))
+        ns2 = df2['peptide'].values
+        nr2 = df2['RT exp'].values
+        nm2 = df2['mods_for_deepLC'].values
+        calibset = set(ns2)
+
+        outtrain.write('seq,modifications,tr\n')
+        for seq, RT, mods_tmp in zip(ns2, nr2, nm2):
+            # mods_tmp = '|'.join([str(idx+1)+'|Carbamidomethyl' for idx, aa in enumerate(seq) if aa == 'C'])
+            outtrain.write(seq + ',' + str(mods_tmp) + ',' + str(RT) + '\n')
+        outtrain.flush()
+
+        outcalib.write('seq,modifications,tr\n')
+        for seq, RT, mods_tmp in zip(ns, nr, nm):
+            # mods_tmp = '|'.join([str(idx+1)+'|Carbamidomethyl' for idx, aa in enumerate(seq) if aa == 'C'])
+            outcalib.write(seq + ',' + str(mods_tmp) + ',' + str(RT) + '\n')
+        outcalib.flush()
+
+        subprocess.call([deeplc_path, '--file_pred', outcalib.name, '--file_cal', outtrain.name, '--file_pred_out', outres_name])
+        pepdict = dict()
+        train_RT = []
+        train_seq = []
+        for x in open(outres_name).readlines()[1:]:
+            _, seq, _, RTexp, RT = x.strip().split(',')
+            pepdict[seq] = float(RT)
+
+            if seq in calibset:
+                train_seq.append(seq)
+                train_RT.append(float(RTexp))
+
+
+        train_RT = np.array(train_RT)
+        RT_pred = np.array([pepdict[s] for s in train_seq])
+
+        rt_diff_tmp = RT_pred - train_RT
+        RT_left = -min(rt_diff_tmp)
+        RT_right = max(rt_diff_tmp)
+
+        try:
+            start_width = (scoreatpercentile(rt_diff_tmp, 95) - scoreatpercentile(rt_diff_tmp, 5)) / 100
+            XRT_shift, XRT_sigma, covvalue = calibrate_RT_gaus(start_width, RT_left, RT_right, rt_diff_tmp)
+        except:
+            start_width = (scoreatpercentile(rt_diff_tmp, 95) - scoreatpercentile(rt_diff_tmp, 5)) / 50
+            XRT_shift, XRT_sigma, covvalue = calibrate_RT_gaus(start_width, RT_left, RT_right, rt_diff_tmp)
+        if np.isinf(covvalue):
+            XRT_shift, XRT_sigma, covvalue = calibrate_RT_gaus(0.1, RT_left, RT_right, rt_diff_tmp)
+        if np.isinf(covvalue):
+            XRT_shift, XRT_sigma, covvalue = calibrate_RT_gaus(1.0, RT_left, RT_right, rt_diff_tmp)
+        print('Calibrated RT shift: ', XRT_shift)
+        print('Calibrated RT sigma: ', XRT_sigma)
+
+        aa, bb, RR, ss = aux.linear_regression(RT_pred, train_RT)
+
+        df1['RT pred DeepLC'] = df1['peptide'].apply(lambda x: pepdict[x])
+        df1['RT diff DeepLC'] = df1['RT exp'] - df1['RT pred DeepLC']
+        df1['RT Z abs diff DeepLC'] = df1['RT diff DeepLC'].abs() / XRT_sigma
+        df1.to_csv(path_or_buf=table_final, sep='\t', index=False)
+
+    if 9 in modes:
         
         if path_to_genemap:
             cos_map = dict()
@@ -221,27 +325,30 @@ def process_folder(args):
         else:
             cos_map = False
 
-        if path_to_cormap:
-            df0 = pd.read_csv(path_to_cormap)
-            df0 = df0.sort_values(by='correlation', ascending=False)
-            df0 = df0.drop_duplicates(subset='peptides')
-            cor_dict = {}
-            for pep, cor in df0[['peptides', 'correlation']].values:
-                cor_dict[pep] = float(cor)
-        else:
-            cor_dict = False
+        # if path_to_cormap:
+        #     df0 = pd.read_csv(path_to_cormap)
+        #     df0 = df0.sort_values(by='correlation', ascending=False)
+        #     df0 = df0.drop_duplicates(subset='peptides')
+        #     cor_dict = {}
+        #     for pep, cor in df0[['peptides', 'correlation']].values:
+        #         cor_dict[pep] = float(cor)
+        # else:
+        #     cor_dict = False
 
 
         # Process output variant table
         folder_name = os.path.basename(os.path.normpath(infolder))
         table_final = os.path.join(infolder, folder_name + '_variants.tsv')
+        table_wilds = os.path.join(infolder, folder_name + '_wilds.tsv')
         table_final_output = os.path.join(infolder, folder_name + '_final.tsv')
+        df2 = pd.read_table(table_wilds)
 
 
         df1 = pd.read_table(table_final)
+        # df1 = df1.rename(columns={"modified_sequence": "peptide"})
         df1['group'] = 'common_group'#df1['filename'].apply(lambda x: x.split('_')[0].lower())
         dfo = df1.copy()
-        dfo = dfo[['peptide', 'filename', 'database', 'gene', 'aach', 'group', 'MS1Intensity', 'brute_count', 'length', 'PEP', 'comment']]
+        dfo = dfo[['peptide', 'filename', 'database', 'gene', 'aach', 'group', 'MS1Intensity', 'brute_count', 'length', 'PEP', 'correlation', 'comment', 'RT Z abs diff DeepLC']]
         dfo['MS1Intensity'] = np.log10(dfo['MS1Intensity'])
         dfo['total_psms'] = dfo.groupby('peptide')['peptide'].transform('count')
         # dfo['total_files'] = dfo.groupby(('peptide', 'filename'))['peptide'].transform('count')
@@ -261,10 +368,12 @@ def process_folder(args):
                                             'brute_count': 'max',
                                             'length': 'first',
                                             'PEP': 'min',
-                                            'comment': 'min'})
+                                            'comment': 'min',
+                                            'correlation': 'max',
+                                            'RT Z abs diff DeepLC': 'min'})
         df = df.rename(columns={"filename": "filecount"})
         dfd = df.reset_index(level=0)
-        cols_to_save = ['aach', 'gene', 'database', 'brute_count', 'length', 'PEP', 'comment']
+        cols_to_save = ['aach', 'gene', 'database', 'brute_count', 'length', 'PEP', 'correlation', 'comment', 'RT Z abs diff DeepLC']
         info = dfd.loc[~dfd.index.duplicated(), cols_to_save]
         udf = df.unstack(level=0)
         gdf = udf.swaplevel(axis=1).sort_index(axis=1).loc[:, (slice(None), ['PSM count', 'MS1Intensity', 'filecount'])].fillna(0)#.astype(int)
@@ -274,13 +383,18 @@ def process_folder(args):
         gdf['PSM count'] = gdf.loc[:, (slice(None), 'PSM count')].sum(axis=1)
         gdf['filecount'] = gdf.loc[:, (slice(None), 'filecount')].sum(axis=1)
         gdf = gdf.reset_index()
-        if cor_dict:
-            gdf['correlation'] = gdf['peptide'].apply(lambda x: cor_dict.get(x, 0))
-        else:
-            gdf['correlation'] = 0
+        # if cor_dict:
+        #     gdf['correlation'] = gdf['peptide'].apply(lambda x: cor_dict.get(x, 0))
+        # else:
+        #     gdf['correlation'] = 0
         c = list(gdf.columns)
+
+        w_95 = scoreatpercentile(df2['correlation'], 5)
+        gdf.loc[gdf['correlation'] < w_95, 'comment'] = 'unreliable'
+        gdf.loc[gdf['RT Z abs diff DeepLC'] > 3.0, 'comment'] = 'unreliable'
+
         order = {'peptide': 0, 'PSM count': 1, 'filecount': 2, 'aach': 3, 'database': 4, 'gene': 5, 'correlation': 6,
-                'length': 7, 'brute_count': 8, 'PEP': 9, 'comment': 10}
+                'length': 7, 'brute_count': 8, 'PEP': 9, 'comment': 10, 'RT Z abs diff DeepLC': 11}
         gdf = gdf[sorted(c, key=lambda x: order.get(x[0], 1e5))].copy()
         gdf = gdf.replace([np.inf, -np.inf], 0)
         gdf['comment'] = gdf['comment'].fillna('')

@@ -5,6 +5,19 @@ import ast
 from collections import Counter
 from pyteomics import fasta, parser, auxiliary as aux
 
+import ast
+
+mods_custom_dict = {
+    '147.035': 'Oxidation',
+    '160.031': 'Carbamidomethyl',
+    '230.171': 'TMT6plex',
+    '357.258': 'TMT6plex',
+}
+
+def mods_for_deepLC(raw):
+    mods = ast.literal_eval(raw['modifications'])
+    mods = [z.split('@') for z in mods]
+    return '|'.join(z[1]+'|'+mods_custom_dict[z[0]] for z in mods)
 
 def rule_for_mutant(x):
     return all('mut' in z for z in x)

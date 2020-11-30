@@ -84,6 +84,7 @@ def run():
         '--cormap',
         help='path to prosit correlation map',
         default='')
+    parser.add_argument('-deeplc', help='path to deeplc', default='')
     parser.add_argument(
         '--debug',
         action='store_true',
