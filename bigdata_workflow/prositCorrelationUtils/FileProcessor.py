@@ -1,7 +1,22 @@
 import pandas as pd
 import os
 from pyteomics import mzml
+import ast
 
+def oxidation_positions(raw):
+    tmp = ast.literal_eval(raw)
+    tmp = [z.split('@') for z in tmp]
+    return set([int(z[1]) for z in tmp if z[0].startswith('147.')])
+
+def new_sequence(raw):
+    tmp = ''
+    for idx, aa in enumerate(raw['peptide']):
+        if aa == 'M' and idx+1 in raw['oxpos']:
+            tmp += 'M(ox)'
+        else:
+            tmp += aa
+    return tmp
+    
 
 class FileProcessor:
 
@@ -38,12 +53,16 @@ class FileProcessor:
         if wild:
             wild_or_variant = "Wild"
             identipy_file = pd.read_table(name)
+            identipy_file = identipy_file[:1000]
         else:
             wild_or_variant = "Variant"
             identipy_file = pd.read_table(name + '_variants.tsv')
-        identipy_file = identipy_file.rename(columns={"peptide": "modified_sequence"})
-        identipy_file['length'] = identipy_file['modified_sequence'].str.len()
+        # identipy_file = identipy_file.rename(columns={"peptide": "modified_sequence"})       
+        identipy_file['length'] = identipy_file['peptide'].str.len()
         identipy_file = identipy_file.loc[identipy_file['length'] <= 30]
+        identipy_file['oxpos'] = identipy_file['modifications'].apply(oxidation_positions)
+        identipy_file['modified_sequence'] = identipy_file.apply(new_sequence, axis=1)
+        
         return_name = 'tmpPrositDir/identipy' + wild_or_variant + 'TmpFile.csv'
         identipy_file.to_csv(return_name)
         return return_name

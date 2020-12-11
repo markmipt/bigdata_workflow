@@ -27,7 +27,7 @@ class Correlation:
 
         return top / bottom
 
-    def make_correlations(self, old_file, new_file, name, wild_or_variant, wild_name):
+    def make_correlations(self, old_file, new_file, directory, folder_name, wild_or_variant, wild_name):
 
         test = pd.read_csv(old_file)
         ready = pd.read_table(new_file)
@@ -45,7 +45,7 @@ class Correlation:
             for fn, spn, pep_name in test[['filename', 'spectrum', 'modified_sequence']].values:
                 bar.next()
                 i += 1
-                reader = mgf.read('/home/results/identipy/' + name + '/' + fn + '_identipy.mgf')
+                reader = mgf.read(directory + '/' + fn + '_identipy.mgf')
                 mz_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Masses'])
                 int_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Intensities'])
                 full_list.append([mz_tmp, int_tmp])
@@ -59,7 +59,7 @@ class Correlation:
                 bar.next()
                 fn = wild_name[:-len('_identipy_wild_peptides.tsv')]
                 i += 1
-                reader = mgf.read('/home/results/identipy/' + name + '/' + fn + '_identipy.mgf')
+                reader = mgf.read(directory + '/' + fn + '_identipy.mgf')
                 mz_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Masses'])
                 int_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Intensities'])
                 full_list.append([mz_tmp, int_tmp])
@@ -88,6 +88,6 @@ class Correlation:
         test['correlation'] = corr_list
 
         if wild_or_variant == 'variant':
-            test.to_csv(name + '_variants.tsv')
+            test.to_csv(directory + '/' + folder_name + '_variants.tsv', sep='\t', index=False)
         else:
-            test.to_csv(name + '_wilds.tsv')
+            test.to_csv(directory + '/' + folder_name + '_wilds.tsv', sep='\t', index=False)
