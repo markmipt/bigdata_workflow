@@ -97,7 +97,7 @@ def get_filtered_variants(table_variant, brute_counter_percent):
     # May be not to filter to 0 missed cleavages ???
     df2_v = df2_v[df2_v['mc'] == 0]
     # Another rule instead ???
-    df2_v = df2_v[df2_v['brute_count'] <= 5.0]
+    # df2_v = df2_v[df2_v['brute_count'] <= 5.0]
     df2_v = df2_v[df2_v['AAchange'].apply(
         lambda z: 'L>I' not in z and 'I>L' not in z)]
     # df2_v_f = aux.filter(df2_v, key='PEP', is_decoy='decoy2', fdr=0.05)
@@ -218,6 +218,22 @@ def run_scavager(pepxml_wild, path_to_fasta=False):
     subprocess.run(array_for_subprocess)
     return
 
+def run_scavager_union(pepxml_list, pxd_folder, path_to_fasta):
+    array_for_subprocess = [
+        "/home/mark/virtualenv_bdworkflow/bin/scavager", ]
+    array_for_subprocess.extend(pepxml_list)
+    array_for_subprocess.extend([
+        '-u',
+        '-q',
+        '-fdr',
+        '5.0',
+        '--union-name-suffix',
+        '_'+pxd_folder+'_wild',
+    ])
+    if path_to_fasta:
+        array_for_subprocess.extend(['-db', path_to_fasta])
+    subprocess.run(array_for_subprocess)
+    return
 
 def get_final_table(dfc):
     columns = [

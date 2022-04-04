@@ -350,59 +350,112 @@ def process_folder(args):
         dfo = df1.copy()
         dfo = dfo[['peptide', 'filename', 'database', 'gene', 'aach', 'group', 'MS1Intensity', 'brute_count', 'length', 'PEP', 'correlation', 'comment', 'RT Z abs diff DeepLC']]
         dfo['MS1Intensity'] = np.log10(dfo['MS1Intensity'])
-        dfo['total_psms'] = dfo.groupby('peptide')['peptide'].transform('count')
+        dfo['PSM count'] = 1#dfo.groupby('peptide')['peptide'].transform('count')
         # dfo['total_files'] = dfo.groupby(('peptide', 'filename'))['peptide'].transform('count')
-        dfo['PSM count'] = dfo.groupby(['peptide', 'filename'])['peptide'].transform('count')
+        # dfo['PSM count'] = dfo.groupby(['peptide', 'filename'])['peptide'].transform('count')
+        # print(dfo[dfo['peptide'] == 'GEGEPCGGGGAGGGYCAPGMECVK'])
         dfo['total_intensity_max'] = dfo.groupby('peptide')['MS1Intensity'].transform('max')
-        df1 = dfo.reset_index(level=0).rename(columns={'level_0': 'group'})
-        # # df1 = 
-        # print(df1[pd.isna(df1['gene'])])
-        df1.loc[pd.isna(df1['gene']), 'gene'] = 'NAgene'
-        print(df1[pd.isna(df1['gene'])])
-        if cos_map:
-            df1['gene'] = df1['gene'].apply(utils.remap_gene, cos_map=cos_map)
-        df = df1.groupby(['group', 'peptide']).agg({'aach': 'first', 'gene': 'first', 'database': 'first',
-                                            'filename': lambda x: len(set(x)),
-                                            'PSM count': 'sum',
-                                            'MS1Intensity': 'max',
-                                            'brute_count': 'max',
-                                            'length': 'first',
-                                            'PEP': 'min',
-                                            'comment': 'min',
-                                            'correlation': 'max',
-                                            'RT Z abs diff DeepLC': 'min'})
-        df = df.rename(columns={"filename": "filecount"})
-        dfd = df.reset_index(level=0)
-        cols_to_save = ['aach', 'gene', 'database', 'brute_count', 'length', 'PEP', 'correlation', 'comment', 'RT Z abs diff DeepLC']
-        info = dfd.loc[~dfd.index.duplicated(), cols_to_save]
-        udf = df.unstack(level=0)
-        gdf = udf.swaplevel(axis=1).sort_index(axis=1).loc[:, (slice(None), ['PSM count', 'MS1Intensity', 'filecount'])].fillna(0)#.astype(int)
-        gdf.columns.names = (None, None)
-        gdf[cols_to_save] = info[cols_to_save]
-        # gdf['PSM count'] = gdf.loc[:, (slice(None), 'PSM count')]
-        gdf['PSM count'] = gdf.loc[:, (slice(None), 'PSM count')].sum(axis=1)
-        gdf['filecount'] = gdf.loc[:, (slice(None), 'filecount')].sum(axis=1)
-        gdf = gdf.reset_index()
-        # if cor_dict:
-        #     gdf['correlation'] = gdf['peptide'].apply(lambda x: cor_dict.get(x, 0))
-        # else:
-        #     gdf['correlation'] = 0
-        c = list(gdf.columns)
 
+
+        dfo['comment'] = ''
         w_95 = scoreatpercentile(df2['correlation'], 5)
-        gdf.loc[gdf['correlation'] < w_95, 'comment'] = 'unreliable'
-        gdf.loc[gdf['RT Z abs diff DeepLC'] > 3.0, 'comment'] = 'unreliable'
+        dfo.loc[dfo['correlation'] < w_95, 'comment'] = 'unreliable'
+        dfo.loc[dfo['RT Z abs diff DeepLC'] > 3.0, 'comment'] = 'unreliable'
+        dfo = dfo[dfo['comment'] != 'unreliable']
+        if len(dfo):
 
-        order = {'peptide': 0, 'PSM count': 1, 'filecount': 2, 'aach': 3, 'database': 4, 'gene': 5, 'correlation': 6,
-                'length': 7, 'brute_count': 8, 'PEP': 9, 'comment': 10, 'RT Z abs diff DeepLC': 11}
-        gdf = gdf[sorted(c, key=lambda x: order.get(x[0], 1e5))].copy()
-        gdf = gdf.replace([np.inf, -np.inf], 0)
-        gdf['comment'] = gdf['comment'].fillna('')
-        gdf = gdf.sort_values(by=['comment', 'filecount'], ascending = [True, False])
-        cols_to_int = {}
-        for coln in gdf.columns:
-            if 'PSM count' in coln or 'filecount' in coln:
-                cols_to_int[coln] = 'int32'
-        gdf = gdf.astype(cols_to_int)
-        gdf.to_csv(path_or_buf=table_final_output, sep='\t', index=False, float_format='%.2f')
+            df1 = dfo.reset_index(level=0).rename(columns={'level_0': 'group'})
+            # # df1 = 
+            # print(df1[pd.isna(df1['gene'])])
+            df1.loc[pd.isna(df1['gene']), 'gene'] = 'NAgene'
+            print(df1[pd.isna(df1['gene'])])
+            if cos_map:
+                df1['gene'] = df1['gene'].apply(utils.remap_gene, cos_map=cos_map)
+            df = df1.groupby(['group', 'peptide']).agg({'aach': 'first', 'gene': 'first', 'database': 'first',
+                                                'filename': lambda x: len(set(x)),
+                                                'PSM count': 'sum',
+                                                'MS1Intensity': 'max',
+                                                'brute_count': 'max',
+                                                'length': 'first',
+                                                'PEP': 'min',
+                                                'comment': 'min',
+                                                'correlation': 'max',
+                                                'RT Z abs diff DeepLC': 'min'})
+            df = df.rename(columns={"filename": "filecount"})
+            dfd = df.reset_index(level=0)
+            cols_to_save = ['aach', 'gene', 'database', 'brute_count', 'length', 'PEP', 'correlation', 'comment', 'RT Z abs diff DeepLC']
+            info = dfd.loc[~dfd.index.duplicated(), cols_to_save]
+            udf = df.unstack(level=0)
+            gdf = udf.swaplevel(axis=1).sort_index(axis=1).loc[:, (slice(None), ['PSM count', 'MS1Intensity', 'filecount'])].fillna(0)#.astype(int)
+            gdf.columns.names = (None, None)
+            gdf[cols_to_save] = info[cols_to_save]
+            # gdf['PSM count'] = gdf.loc[:, (slice(None), 'PSM count')]
+            gdf['PSM count'] = gdf.loc[:, (slice(None), 'PSM count')].sum(axis=1)
+            gdf['filecount'] = gdf.loc[:, (slice(None), 'filecount')].sum(axis=1)
+            gdf = gdf.reset_index()
+            # if cor_dict:
+            #     gdf['correlation'] = gdf['peptide'].apply(lambda x: cor_dict.get(x, 0))
+            # else:
+            #     gdf['correlation'] = 0
+            c = list(gdf.columns)
+
+            # w_95 = scoreatpercentile(df2['correlation'], 5)
+            # gdf.loc[gdf['correlation'] < w_95, 'comment'] = 'unreliable'
+            # gdf.loc[gdf['RT Z abs diff DeepLC'] > 3.0, 'comment'] = 'unreliable'
+            # gdf.loc[gdf['brute_count'] > 1.0, 'comment'] = 'unreliable'
+
+            order = {'peptide': 0, 'PSM count': 1, 'filecount': 2, 'aach': 3, 'database': 4, 'gene': 5, 'correlation': 6,
+                    'length': 7, 'brute_count': 8, 'PEP': 9, 'comment': 10, 'RT Z abs diff DeepLC': 11}
+            gdf = gdf[sorted(c, key=lambda x: order.get(x[0], 1e5))].copy()
+            gdf = gdf.replace([np.inf, -np.inf], 0)
+            gdf['comment'] = gdf['comment'].fillna('')
+            gdf = gdf.sort_values(by=['comment', 'filecount'], ascending = [True, False])
+            cols_to_int = {}
+            for coln in gdf.columns:
+                if 'PSM count' in coln or 'filecount' in coln:
+                    cols_to_int[coln] = 'int32'
+            gdf = gdf.astype(cols_to_int)
+            gdf.to_csv(path_or_buf=table_final_output, sep='\t', index=False, float_format='%.2f')
+        else:
+            pd.DataFrame(columns=['peptide', 'PSM count', 'filecount', 'aach', 'database', 'gene',
+            'correlation', 'length', 'brute_count', 'PEP', 'comment',
+            'RT Z abs diff DeepLC', 'common_group', 'common_group.1',
+            'common_group.2']).to_csv(path_or_buf=table_final_output, sep='\t', index=False, float_format='%.2f')
+
+
+    if 10 in modes:
+        # Wild search union
+
+        list_of_pepxml = []
+        folder_name = os.path.basename(os.path.normpath(infolder))
+
+        for infilename in os.listdir(infolder):
+            infile = os.path.join(infolder, infilename)
+            if infile.lower().endswith('.mzml'):
+
+                pepxml_tmp = os.path.splitext(infile)[0] + '_identipy.pep.xml'
+                pepxml_wild = pepxml_tmp.split('.pep.xml')[0] + '_wild.pep.xml'
+
+                if utils.file_exist_and_nonempty(pepxml_wild):
+                    list_of_pepxml.append(pepxml_wild)
+
+        if len(list_of_pepxml):
+            utils.run_scavager_union(list_of_pepxml, folder_name, path_to_output_wild_reversed_fasta)
+
+                # if args['overwrite'] or \
+                #         not utils.file_exist_and_nonempty(pepxml_wild):
+                    # enz = "'[RK]|{P}'"
+                    # mc = 1
+                    # utils.run_identipy(
+                    #     infile,
+                    #     path_to_cfg,
+                    #     path_to_output_wild_reversed_fasta,
+                    #     enz,
+                    #     # fmods_val,
+                    #     mc,
+                    #     dino=True)
+                    # shutil.move(pepxml_tmp, pepxml_wild)
+                    # utils.run_scavager(
+                    #     pepxml_wild,
+                    #     path_to_output_wild_reversed_fasta)
 
