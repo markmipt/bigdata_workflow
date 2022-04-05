@@ -162,9 +162,9 @@ def file_exist_and_nonempty(infile):
 
 
 def run_identipy(infile, path_to_cfg, path_to_fasta, enz, mc,
-                 dino=False, snp=False):
+                 dino=False, snp=False, path_to_identipy='/usr/bin/identipy'):
     array_for_subprocess = [
-        "/home/mark/virtualenv_identipy/bin/identipy",
+        path_to_identipy,
         infile,
         '-db',
         path_to_fasta,
@@ -191,24 +191,22 @@ def run_identipy(infile, path_to_cfg, path_to_fasta, enz, mc,
         '0',
         '-lmin',
         '6',
-        '-deis',
-        'no',
         '-cfg',
         path_to_cfg,
     ]
     if dino:
         array_for_subprocess.extend([
             '-dino',
-            '/usr/bin/dinosaur'])
+            dino])
     if snp:
         array_for_subprocess.extend(['-snp', '1'])
     subprocess.run(array_for_subprocess)
     return
 
 
-def run_scavager(pepxml_wild, path_to_fasta=False):
+def run_scavager(pepxml_wild, path_to_fasta=False, path_to_scavager='/usr/bin/scavager'):
     array_for_subprocess = [
-        "scavager",
+        path_to_scavager,
         pepxml_wild,
         '-fdr',
         '5.0',

@@ -48,6 +48,21 @@ def run():
     #     help='fixed modifications.\
     #          in mass1@aminoacid1,mass2@aminoacid2 format')
     parser.add_argument(
+        '-ff',
+        '--featurefinder',
+        help='path to biosaur or dinosaur bin file',
+        default='/usr/bin/biosaur2')
+    parser.add_argument(
+        '-idpy',
+        '--identipy',
+        help='path to identipy',
+        default='/usr/bin/identipy')
+    parser.add_argument(
+        '-scav',
+        '--scavager',
+        help='path to scavager',
+        default='/usr/bin/scavager')
+    parser.add_argument(
         '-wdb',
         '--wdatabase',
         help='path to wild fasta file',

@@ -100,11 +100,12 @@ def process_folder(args):
                         enz,
                         # fmods_val,
                         mc,
-                        dino=True)
+                        dino=args['featurefinder'],
+                        path_to_identipy=args['identipy'])
                     shutil.move(pepxml_tmp, pepxml_wild)
                     utils.run_scavager(
                         pepxml_wild,
-                        path_to_output_wild_reversed_fasta)
+                        path_to_output_wild_reversed_fasta, path_to_scavager=args['scavager'])
 
     if 3 in modes:
         # Variant search
@@ -130,9 +131,10 @@ def process_folder(args):
                         enz,
                         # fmods_val,
                         mc,
-                        dino=False)
+                        dino=False,
+                        path_to_identipy=args['identipy'])
                     shutil.move(pepxml_tmp, pepxml_variant)
-                    utils.run_scavager(pepxml_variant)
+                    utils.run_scavager(pepxml_variant, path_to_scavager=args['scavager'])
 
     if 4 in modes:
         # Brute force search
@@ -161,9 +163,10 @@ def process_folder(args):
                             # fmods_val,
                             mc,
                             dino=False,
-                            snp=True)
+                            snp=True,
+                            path_to_identipy=args['identipy'])
                         shutil.move(pepxml_tmp, pepxml_bruteforce)
-                        utils.run_scavager(pepxml_bruteforce)
+                        utils.run_scavager(pepxml_bruteforce, path_to_scavager=args['scavager'])
     if 5 in modes:
         # Prepare output variant tables
         for infilename in os.listdir(infolder):
@@ -440,7 +443,7 @@ def process_folder(args):
                     list_of_pepxml.append(pepxml_wild)
 
         if len(list_of_pepxml):
-            utils.run_scavager_union(list_of_pepxml, folder_name, path_to_output_wild_reversed_fasta)
+            utils.run_scavager_union(list_of_pepxml, folder_name, path_to_output_wild_reversed_fasta, path_to_scavager=args['scavager'])
 
                 # if args['overwrite'] or \
                 #         not utils.file_exist_and_nonempty(pepxml_wild):
