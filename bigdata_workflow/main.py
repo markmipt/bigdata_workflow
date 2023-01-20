@@ -86,33 +86,51 @@ def process_folder(args):
             infile = os.path.join(infolder, infilename)
             if infile.lower().endswith('.mzml'):
 
-                pepxml_tmp = os.path.splitext(infile)[0] + '_identipy.pep.xml'
+                # pepxml_tmp = os.path.splitext(infile)[0] + '_identipy.pep.xml'
+                pepxml_tmp = os.path.splitext(infile)[0] + '.pep.xml'
                 pepxml_wild = pepxml_tmp.split('.pep.xml')[0] + '_wild.pep.xml'
 
                 if args['overwrite'] or \
                         not utils.file_exist_and_nonempty(pepxml_wild):
-                    enz = "'[RK]|{P}'"
-                    mc = 1
-                    utils.run_identipy(
-                        infile,
-                        path_to_cfg,
-                        path_to_output_wild_reversed_fasta,
-                        enz,
-                        # fmods_val,
-                        mc,
-                        dino=args['featurefinder'],
-                        path_to_identipy=args['identipy'])
-                    shutil.move(pepxml_tmp, pepxml_wild)
-                    utils.run_scavager(
-                        pepxml_wild,
-                        path_to_output_wild_reversed_fasta, path_to_scavager=args['scavager'])
+
+                    try:
+
+                        enz = "'[RK]|{P}'"
+                        mc = 1
+                        utils.run_identipy(
+                            infile,
+                            path_to_cfg,
+                            path_to_output_wild_reversed_fasta,
+                            enz,
+                            # fmods_val,
+                            mc,
+                            dino=False,
+                            # dino=args['featurefinder'],
+                            path_to_identipy=args['identipy'])
+                        shutil.move(pepxml_tmp, pepxml_wild)
+                        utils.run_scavager(
+                            pepxml_wild,
+                            path_to_output_wild_reversed_fasta, path_to_scavager=args['scavager'])
+
+
+                    except:
+                        logger.info('Cannot process file %s...', infile)
+                        trash_dir = os.path.join(infolder, 'unprocessed/')
+
+                        if not os.path.exists(trash_dir):
+                            os.makedirs(trash_dir)
+
+                        infile_to_trash = os.path.join(trash_dir, infilename)
+
+                        shutil.move(infile, infile_to_trash)
 
     if 3 in modes:
         # Variant search
         for infilename in os.listdir(infolder):
             infile = os.path.join(infolder, infilename)
             # print(infile)
-            if infile.lower().endswith('_identipy.mgf'):
+            # if infile.lower().endswith('_identipy.mgf'):
+            if infile.lower().endswith('.mzml'):
 
                 pepxml_tmp = os.path.splitext(infile)[0] + '.pep.xml'
                 pepxml_variant = pepxml_tmp.split('.pep.xml')[0] + \
@@ -121,6 +139,7 @@ def process_folder(args):
 
                 if args['overwrite'] or \
                         not utils.file_exist_and_nonempty(pepxml_variant):
+
 
                     enz = "'{X}|{X}'"
                     mc = 0
@@ -136,11 +155,14 @@ def process_folder(args):
                     shutil.move(pepxml_tmp, pepxml_variant)
                     utils.run_scavager(pepxml_variant, path_to_scavager=args['scavager'])
 
+                        
+
     if 4 in modes:
         # Brute force search
         for infilename in os.listdir(infolder):
             infile = os.path.join(infolder, infilename)
-            if infile.lower().endswith('_identipy.mgf'):
+            # if infile.lower().endswith('_identipy.mgf'):
+            if infile.lower().endswith('.mzml'):
 
                 pepxml_tmp = os.path.splitext(infile)[0] + '.pep.xml'
                 pepxml_wild = pepxml_tmp.split('.pep.xml')[0] + '_wild.pep.xml'
@@ -171,7 +193,8 @@ def process_folder(args):
         # Prepare output variant tables
         for infilename in os.listdir(infolder):
             infile = os.path.join(infolder, infilename)
-            if infile.lower().endswith('_identipy.mgf'):
+            # if infile.lower().endswith('_identipy.mgf'):
+            if infile.lower().endswith('.mzml'):
                 try:
                     table_variant = os.path.splitext(infile)[0] + \
                         '_variant_PSMs_full.tsv'
@@ -192,7 +215,7 @@ def process_folder(args):
                         sep='\t',
                         index=False)
                 except:
-                    print('Missing tsv files')
+                    print('Missing tsv files for mode #5')
 
     if 6 in modes:
         # Prepare output variant table for whole folder
@@ -204,8 +227,10 @@ def process_folder(args):
             infile = os.path.join(infolder, infilename)
             if infile.lower().endswith('.mzml'):
                 fn = os.path.splitext(infile)[0]
+                # table_output_variant = os.path.splitext(infile)[0] + \
+                #     '_identipy_variant_final.tsv'
                 table_output_variant = os.path.splitext(infile)[0] + \
-                    '_identipy_variant_final.tsv'
+                    '_variant_final.tsv'
                 try:
                     df1 = pd.read_csv(table_output_variant, sep='\t')
                     df1['foldername'] = folder_name
@@ -217,7 +242,7 @@ def process_folder(args):
                         dfc = dfc.append(df1)
                         dfc.reset_index(inplace=True, drop=True)
                 except:
-                    print('Missing tsv files')
+                    print('Missing tsv files for mode #6')
 
         # print('HERE', flag)
         if not flag:
@@ -342,15 +367,25 @@ def process_folder(args):
         # Process output variant table
         folder_name = os.path.basename(os.path.normpath(infolder))
         table_final = os.path.join(infolder, folder_name + '_variants.tsv')
-        table_wilds = os.path.join(infolder, folder_name + '_wilds.tsv')
         table_final_output = os.path.join(infolder, folder_name + '_final.tsv')
-        df2 = pd.read_table(table_wilds)
 
+        try:
+            table_wilds = os.path.join(infolder, folder_name + '_wilds.tsv')
+            df2 = pd.read_table(table_wilds)
+            wild_threshold = scoreatpercentile(df2['correlation'], 5)
+        except:
+            wild_threshold = -100
 
         df1 = pd.read_table(table_final)
         # df1 = df1.rename(columns={"modified_sequence": "peptide"})
         df1['group'] = 'common_group'#df1['filename'].apply(lambda x: x.split('_')[0].lower())
         dfo = df1.copy()
+
+        if 'correlation' not in dfo.columns:
+            dfo['correlation'] = -1
+        if 'RT Z abs diff DeepLC' not in dfo.columns:
+            dfo['RT Z abs diff DeepLC'] = -1
+
         dfo = dfo[['peptide', 'filename', 'database', 'gene', 'aach', 'group', 'MS1Intensity', 'brute_count', 'length', 'PEP', 'correlation', 'comment', 'RT Z abs diff DeepLC']]
         dfo['MS1Intensity'] = np.log10(dfo['MS1Intensity'])
         dfo['PSM count'] = 1#dfo.groupby('peptide')['peptide'].transform('count')
@@ -361,10 +396,10 @@ def process_folder(args):
 
 
         dfo['comment'] = ''
-        w_95 = scoreatpercentile(df2['correlation'], 5)
+        w_95 = wild_threshold
         dfo.loc[dfo['correlation'] < w_95, 'comment'] = 'unreliable'
         dfo.loc[dfo['RT Z abs diff DeepLC'] > 3.0, 'comment'] = 'unreliable'
-        dfo = dfo[dfo['comment'] != 'unreliable']
+        # dfo = dfo[dfo['comment'] != 'unreliable']
         if len(dfo):
 
             df1 = dfo.reset_index(level=0).rename(columns={'level_0': 'group'})
@@ -436,7 +471,8 @@ def process_folder(args):
             infile = os.path.join(infolder, infilename)
             if infile.lower().endswith('.mzml'):
 
-                pepxml_tmp = os.path.splitext(infile)[0] + '_identipy.pep.xml'
+                # pepxml_tmp = os.path.splitext(infile)[0] + '_identipy.pep.xml'
+                pepxml_tmp = os.path.splitext(infile)[0] + '.pep.xml'
                 pepxml_wild = pepxml_tmp.split('.pep.xml')[0] + '_wild.pep.xml'
 
                 if utils.file_exist_and_nonempty(pepxml_wild):

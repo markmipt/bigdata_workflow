@@ -45,7 +45,8 @@ class Correlation:
             for fn, spn, pep_name in test[['filename', 'spectrum', 'modified_sequence']].values:
                 bar.next()
                 i += 1
-                reader = mgf.read(directory + '/' + fn + '_identipy.mgf')
+                # reader = mgf.read(directory + '/' + fn + '_identipy.mgf')
+                reader = mzml.read(directory + '/' + fn + '.mzML')
                 mz_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Masses'])
                 int_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Intensities'])
                 full_list.append([mz_tmp, int_tmp])
@@ -59,7 +60,8 @@ class Correlation:
                 bar.next()
                 fn = wild_name[:-len('_identipy_wild_peptides.tsv')]
                 i += 1
-                reader = mgf.read(directory + '/' + fn + '_identipy.mgf')
+                # reader = mgf.read(directory + '/' + fn + '_identipy.mgf')
+                reader = mzml.read(directory + '/' + fn + '.mzML')
                 mz_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Masses'])
                 int_tmp = list(ready.loc[ready['Modified Sequence'] == pep_name]['Intensities'])
                 full_list.append([mz_tmp, int_tmp])

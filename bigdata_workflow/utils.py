@@ -252,7 +252,7 @@ def get_final_table(dfc):
         'RT pred',
         'assumed_charge',
         'num_missed_cleavages',
-        'ISOWIDTHDIFF',
+        # 'ISOWIDTHDIFF',
         'protein',
         'protein_descr',
         'calc_neutral_pep_mass',
