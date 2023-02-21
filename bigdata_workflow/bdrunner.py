@@ -20,15 +20,23 @@ def run():
         description='wrapper for running bigdata workflow',
         epilog='''
 
-    Example usage
-    -------------
-    $ bdrunner input.raw/input_folder
+  Example usage
+  -------------
+  $ bdrunner input.raw/input_folder
 
-    Available modes:
-    1 - convert .raw to .mzML
-    -------------
+  Available modes:
+  1 - convert RAW to mzML
+  2 - canonical search
+  3 - variant search
+  4 - brute-force search
+  5 - variant table generation
+  6 - group FDR filtering
+  7 - Prosit MS/MS prediction
+  8 - DeepLC RT prediction
+  9 - final table composition
+  -------------
     ''',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('indir', help='input directory')
     parser.add_argument(

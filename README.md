@@ -37,7 +37,7 @@ The script contains nine consecutive steps as follows:
    We assume that the most identified "single amino acid substitutions" for these proteins are just artifacts produced by abundant modifications.
 5. **Variant tables generation.** A table with variant peptides is generated for each file in the dataset.
    Variant peptides are sequences which belong only to variant proteins (target or decoy) and not shared with any canonical proteins.
-6. **Group-specific FDR evaluation.** All tables of variants are combinedand the list of identifications is filtered to 5% group-specific FDR
+6. **Group-specific FDR evaluation.** All tables of variants are combined and the list of identifications is filtered to 5% group-specific FDR
    using posterior error probabilities calculated by Scavager.
 7. **Prosit MS/MS prediction.** MS/MS peak intensities are predicted using PROSIT for 5% FDR filtered variant peptides
    and for 1000 random canonical peptides identified. Next, correlations between experimental and predicted MS/MS spectra are calculated
