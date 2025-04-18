@@ -8,3 +8,4 @@ matplotlib
 progress
 setuptools
 pandas
+ms2pip

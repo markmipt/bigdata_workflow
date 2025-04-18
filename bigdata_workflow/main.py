@@ -12,7 +12,7 @@ from scipy.optimize import curve_fit
 from scipy import exp
 
 from .prositCorrelationUtils.PrositPipeline import PrositPipeline
-from . import utils
+from . import utils, utils_ms2pip
 logger = logging.getLogger(__name__)
 
 
@@ -218,11 +218,12 @@ def process_folder(args):
                     print('Missing tsv files for mode #5')
 
     if 6 in modes:
-        # Prepare output variant table for whole folder
+        # Prepare output variant and wild tables for whole folder
         flag = 1
         folder_name = os.path.basename(os.path.normpath(infolder))
         print(folder_name)
         table_final = os.path.join(infolder, folder_name + '_variants.tsv')
+        table_final2 = os.path.join(infolder, folder_name + '_wilds.tsv')
         for infilename in os.listdir(infolder):
             infile = os.path.join(infolder, infilename)
             if infile.lower().endswith('.mzml'):
@@ -231,16 +232,28 @@ def process_folder(args):
                 #     '_identipy_variant_final.tsv'
                 table_output_variant = os.path.splitext(infile)[0] + \
                     '_variant_final.tsv'
+                table_output_wild = os.path.splitext(infile)[0] + \
+                    '_wild_peptides.tsv'
                 try:
                     df1 = pd.read_csv(table_output_variant, sep='\t')
                     df1['foldername'] = folder_name
                     df1['filename'] = os.path.basename(fn)
+
+                    df2 = pd.read_csv(table_output_wild, sep='\t')
+                    df2['foldername'] = folder_name
+                    df2['filename'] = os.path.basename(fn)
+
                     if flag:
                         dfc = df1.copy()
                         flag = 0
+
+                        dfw = df2.copy()
                     else:
-                        dfc = dfc.append(df1)
+                        dfc = pd.concat([dfc, df1])
                         dfc.reset_index(inplace=True, drop=True)
+
+                        dfw = pd.concat([dfw, df2])
+                        dfw.reset_index(inplace=True, drop=True)
                 except:
                     print('Missing tsv files for mode #6')
 
@@ -251,14 +264,21 @@ def process_folder(args):
             dfc = utils.get_final_table(dfc)
             dfc.to_csv(path_or_buf=table_final, sep='\t', index=False)
 
+            variant_sp_id = set(dfc['spectrum'])
+            dfw = dfw[dfw['spectrum'].apply(lambda x: x not in variant_sp_id)]
+            dfw = dfw.sample(n=3000)
+            dfw.to_csv(path_or_buf=table_final2, sep='\t', index=False)
+
     if 7 in modes:
         folder_name = os.path.basename(os.path.normpath(infolder))
 
-        prosit_path = args['prosit']
-        MODEL_SPECTRA = args['prosit_model']
-        MODEL_IRT = args['prosit_irt_model']
-        prosit_pipeline = PrositPipeline()
-        prosit_pipeline.main_prosit(infolder, folder_name, prosit_path, MODEL_SPECTRA, MODEL_IRT)
+        utils_ms2pip.main_ms2pip(infolder, folder_name)
+
+        # prosit_path = args['prosit']
+        # MODEL_SPECTRA = args['prosit_model']
+        # MODEL_IRT = args['prosit_irt_model']
+        # prosit_pipeline = PrositPipeline()
+        # prosit_pipeline.main_prosit(infolder, folder_name, prosit_path, MODEL_SPECTRA, MODEL_IRT)
 
     if 8 in modes:
         deeplc_path = args['deeplc']
@@ -372,7 +392,8 @@ def process_folder(args):
         try:
             table_wilds = os.path.join(infolder, folder_name + '_wilds.tsv')
             df2 = pd.read_table(table_wilds)
-            wild_threshold = scoreatpercentile(df2['correlation'], 5)
+            wild_threshold = scoreatpercentile(df2['correlation'], 10)
+            print(wild_threshold)
         except:
             wild_threshold = -100
 
@@ -396,9 +417,19 @@ def process_folder(args):
 
 
         dfo['comment'] = ''
+        dfo['comment2'] = ''
         w_95 = wild_threshold
         dfo.loc[dfo['correlation'] < w_95, 'comment'] = 'unreliable'
+        dfo.loc[dfo['correlation'] < w_95, 'comment2'] = dfo.loc[dfo['correlation'] < w_95, 'comment2'] + ' COR'
         dfo.loc[dfo['RT Z abs diff DeepLC'] > 3.0, 'comment'] = 'unreliable'
+        dfo.loc[dfo['RT Z abs diff DeepLC'] > 3.0, 'comment2'] = dfo.loc[dfo['RT Z abs diff DeepLC'] > 3.0, 'comment2'] + ' RT'
+
+        dfo.loc[dfo['aach'].apply(lambda x: x[-1] == 'K' or x[-1] == 'R'), 'comment'] = 'unreliable'
+        dfo.loc[dfo['aach'].apply(lambda x: x[-1] == 'K' or x[-1] == 'R'), 'comment2'] = dfo.loc[dfo['aach'].apply(lambda x: x[-1] == 'K' or x[-1] == 'R'), 'comment2'] + ' SEMI'
+        # dfo.loc[dfo['brute_count'] > 1.0, 'comment'] = 'unreliable'
+        # dfo.loc[dfo['brute_count'] > 1.0, 'comment2'] = dfo.loc[dfo['brute_count'] > 1.0, 'comment2'] + ' BR'
+
+
         # dfo = dfo[dfo['comment'] != 'unreliable']
         if len(dfo):
 
@@ -417,11 +448,12 @@ def process_folder(args):
                                                 'length': 'first',
                                                 'PEP': 'min',
                                                 'comment': 'min',
+                                                'comment2': 'min',
                                                 'correlation': 'max',
                                                 'RT Z abs diff DeepLC': 'min'})
             df = df.rename(columns={"filename": "filecount"})
             dfd = df.reset_index(level=0)
-            cols_to_save = ['aach', 'gene', 'database', 'brute_count', 'length', 'PEP', 'correlation', 'comment', 'RT Z abs diff DeepLC']
+            cols_to_save = ['aach', 'gene', 'database', 'brute_count', 'length', 'PEP', 'correlation', 'comment', 'comment2', 'RT Z abs diff DeepLC']
             info = dfd.loc[~dfd.index.duplicated(), cols_to_save]
             udf = df.unstack(level=0)
             gdf = udf.swaplevel(axis=1).sort_index(axis=1).loc[:, (slice(None), ['PSM count', 'MS1Intensity', 'filecount'])].fillna(0)#.astype(int)
@@ -440,10 +472,11 @@ def process_folder(args):
             # w_95 = scoreatpercentile(df2['correlation'], 5)
             # gdf.loc[gdf['correlation'] < w_95, 'comment'] = 'unreliable'
             # gdf.loc[gdf['RT Z abs diff DeepLC'] > 3.0, 'comment'] = 'unreliable'
-            # gdf.loc[gdf['brute_count'] > 1.0, 'comment'] = 'unreliable'
+            gdf.loc[gdf['brute_count'] > 1.0, 'comment'] = 'unreliable'
+            gdf.loc[gdf['brute_count'] > 1.0, 'comment2'] = gdf.loc[gdf['brute_count'] > 1.0, 'comment2'].values + ' BR'
 
             order = {'peptide': 0, 'PSM count': 1, 'filecount': 2, 'aach': 3, 'database': 4, 'gene': 5, 'correlation': 6,
-                    'length': 7, 'brute_count': 8, 'PEP': 9, 'comment': 10, 'RT Z abs diff DeepLC': 11}
+                    'length': 7, 'brute_count': 8, 'PEP': 9, 'comment': 10, 'comment2': 11, 'RT Z abs diff DeepLC': 12}
             gdf = gdf[sorted(c, key=lambda x: order.get(x[0], 1e5))].copy()
             gdf = gdf.replace([np.inf, -np.inf], 0)
             gdf['comment'] = gdf['comment'].fillna('')
@@ -456,7 +489,7 @@ def process_folder(args):
             gdf.to_csv(path_or_buf=table_final_output, sep='\t', index=False, float_format='%.2f')
         else:
             pd.DataFrame(columns=['peptide', 'PSM count', 'filecount', 'aach', 'database', 'gene',
-            'correlation', 'length', 'brute_count', 'PEP', 'comment',
+            'correlation', 'length', 'brute_count', 'PEP', 'comment', 'comment2',
             'RT Z abs diff DeepLC', 'common_group', 'common_group.1',
             'common_group.2']).to_csv(path_or_buf=table_final_output, sep='\t', index=False, float_format='%.2f')
 

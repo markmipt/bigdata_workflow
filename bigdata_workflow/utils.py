@@ -70,7 +70,6 @@ def get_brute_counts(table_bruteforce):
         brute_counter_percent[k] = float(v) / koeff * 100
     return brute_counter_percent
 
-
 def get_filtered_variants(table_variant, brute_counter_percent):
     # Read all PSMs
     df2_v = pd.read_csv(table_variant, sep='\t')
@@ -109,7 +108,9 @@ def get_filtered_variants(table_variant, brute_counter_percent):
     return df2_v
 
 def get_filtered_variants_fdr_only(df2_v, fdr):
+    print('Variant PSMs before filtering: %d' % (len(df2_v), ))
     df2_v = aux.filter(df2_v, key='PEP', is_decoy='decoy2', fdr=fdr)
+    print('Variant PSMs after FDR filtering: %d' % (len(df2_v), ))
     return df2_v
 
 # Reversing of variant peptides
@@ -216,9 +217,9 @@ def run_scavager(pepxml_wild, path_to_fasta=False, path_to_scavager='/usr/bin/sc
     subprocess.run(array_for_subprocess)
     return
 
-def run_scavager_union(pepxml_list, pxd_folder, path_to_fasta):
+def run_scavager_union(pepxml_list, pxd_folder, path_to_fasta, path_to_scavager='/usr/bin/scavager'):
     array_for_subprocess = [
-        "/home/mark/virtualenv_bdworkflow/bin/scavager", ]
+        path_to_scavager, ]
     array_for_subprocess.extend(pepxml_list)
     array_for_subprocess.extend([
         '-u',
@@ -273,3 +274,17 @@ def remap_gene(x, cos_map):
         return cos_map[x.split('+')[0]]
     else:
         return x
+
+
+def get_wild_peptides(file):
+    files = os.listdir(file)
+    most_len = 0
+    best_wild_file = ''
+    for i in files:
+        if i.endswith("_wild_peptides.tsv"):
+            tmp_df = pd.read_table(file + "/" + i)
+            tmp_len = len(tmp_df)
+            if tmp_len > most_len:
+                most_len = tmp_len
+                best_wild_file = i
+    return best_wild_file
