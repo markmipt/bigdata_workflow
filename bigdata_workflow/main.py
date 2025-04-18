@@ -1,5 +1,4 @@
 import logging
-import re
 import os
 import subprocess
 import shutil
@@ -9,7 +8,6 @@ import tempfile
 from pyteomics import auxiliary as aux
 from scipy.stats import scoreatpercentile
 from scipy.optimize import curve_fit
-from scipy import exp
 
 from .prositCorrelationUtils.PrositPipeline import PrositPipeline
 from . import utils, utils_ms2pip
@@ -18,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def noisygaus(x, a, x0, sigma, b):
-    return a * exp(-(x - x0) ** 2 / (2 * sigma ** 2)) + b
+    return a * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2)) + b
 
 def calibrate_RT_gaus(bwidth, mass_left, mass_right, true_md):
 
@@ -155,7 +153,7 @@ def process_folder(args):
                     shutil.move(pepxml_tmp, pepxml_variant)
                     utils.run_scavager(pepxml_variant, path_to_scavager=args['scavager'])
 
-                        
+
 
     if 4 in modes:
         # Brute force search
@@ -364,7 +362,7 @@ def process_folder(args):
         df1.to_csv(path_or_buf=table_final, sep='\t', index=False)
 
     if 9 in modes:
-        
+
         if path_to_genemap:
             cos_map = dict()
             for l in open(path_to_genemap, 'r'):
@@ -434,7 +432,7 @@ def process_folder(args):
         if len(dfo):
 
             df1 = dfo.reset_index(level=0).rename(columns={'level_0': 'group'})
-            # # df1 = 
+            # # df1 =
             # print(df1[pd.isna(df1['gene'])])
             df1.loc[pd.isna(df1['gene']), 'gene'] = 'NAgene'
             print(df1[pd.isna(df1['gene'])])
